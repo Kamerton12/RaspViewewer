@@ -19,7 +19,7 @@ class JobGetText: JobService(){
 
     override fun onStopJob(params: JobParameters?): Boolean {
         task?.cancel(true)
-        return true
+        return false
     }
 
     override fun onStartJob(params: JobParameters?): Boolean {
@@ -46,7 +46,7 @@ class JobGetText: JobService(){
                 PreferenceManager.getDefaultSharedPreferences(job.get()!!).edit().putString(RaspWidget.PREFERENCES_HEADER, header).commit()
                 job.get()?.sendBroadcast(intent)
             }
-            job.get()?.jobFinished(params[0], true)
+            job.get()?.jobFinished(params[0], false)
             return null
         }
     }

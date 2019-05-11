@@ -50,7 +50,7 @@ class RaspWidget : AppWidgetProvider() {
 //            .build())
 
         scheduler.schedule(JobInfo.Builder(2, ComponentName(context, JobGetText::class.java))
-            .setPeriodic(900000)
+            .setPeriodic(1800000)
             .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
             .build())
 
