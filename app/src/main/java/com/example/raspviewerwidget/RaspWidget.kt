@@ -1,6 +1,8 @@
 package com.example.raspviewerwidget
 
 import android.app.PendingIntent
+import android.app.job.JobInfo
+import android.app.job.JobScheduler
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
@@ -23,6 +25,8 @@ import android.os.ParcelFileDescriptor
 import java.io.File
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
+import android.support.v4.text.HtmlCompat
+import com.example.raspviewerwidget.jobs.JobGetText
 
 
 /**
@@ -38,13 +42,25 @@ class RaspWidget : AppWidgetProvider() {
 
 
     override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
+        Log.i("ggp", "onEnabled")
+        val scheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+//        scheduler.schedule(JobInfo.Builder(1, ComponentName(context, JobGetText::class.java))
+//            //.setPeriodic(10000)
+//            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+//            .build())
+
+        scheduler.schedule(JobInfo.Builder(2, ComponentName(context, JobGetText::class.java))
+            .setPeriodic(900000)
+            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+            .build())
+
     }
 
     override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
+        val scheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+        scheduler.cancel(3)
+        scheduler.cancel(2)
     }
-
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
@@ -59,7 +75,27 @@ class RaspWidget : AppWidgetProvider() {
         editor.apply()
     }
 
+    override fun onReceive(context: Context?, intent: Intent?) {
+        super.onReceive(context, intent)
+        when(intent?.action){
+            UPDATE_HEADER -> {
+
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val remoteViews = RemoteViews(context!!.packageName, R.layout.rasp_widget)
+                val thisWidget = ComponentName(context, RaspWidget::class.java)
+                val header = intent.getStringExtra(INTENT_EXTRA_STRING)
+                remoteViews.setTextViewText(R.id.appwidget_text, HtmlCompat.fromHtml(header, 0))
+                appWidgetManager.updateAppWidget(thisWidget, remoteViews)
+
+            }
+        }
+    }
+
     companion object {
+
+        const val UPDATE_HEADER = "maxim.drozd.updateHeader"
+        const val INTENT_EXTRA_STRING = "maxim.drozd.string"
+        const val PREFERENCES_HEADER = "maxim.drozd.preferences_header"
 
         internal fun updateAppWidget(
             context: Context,
@@ -67,6 +103,11 @@ class RaspWidget : AppWidgetProvider() {
             appWidgetId: Int
         ) {
             //Toast.makeText(context, "lol", Toast.LENGTH_SHORT).show()
+
+            val scheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+            scheduler.schedule(JobInfo.Builder(3, ComponentName(context, JobGetText::class.java))
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .build())
 
             val intentUpdate = Intent(context, RaspWidget::class.java)
             intentUpdate.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
@@ -77,6 +118,8 @@ class RaspWidget : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.rasp_widget)
             views.setOnClickPendingIntent(R.id.button, pendingUpdate)
 
+            val header = PreferenceManager.getDefaultSharedPreferences(context).getString(PREFERENCES_HEADER, "У нас тут весело")
+            views.setTextViewText(R.id.appwidget_text, HtmlCompat.fromHtml(header!!,0))
             Log.i("ggp", "Before Updater")
 
             if(isNetworkAvailable(context)) {

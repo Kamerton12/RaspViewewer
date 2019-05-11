@@ -35,6 +35,9 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+        <service android:name=".jobs.JobGetText"
+                 android:permission="android.permission.BIND_JOB_SERVICE"
+                 android:exported="true"/>
     </application>
 
 </manifest>
